@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import "./nutrition-targets.css";
 
 type Page = "dashboard" | "capture" | "reflections" | "practice" | "health" | "review";
 type Outcome = "berhasil" | "sebagian" | "belum";
@@ -66,6 +67,7 @@ type FoodEntry = {
   protein: number;
   fat: number;
 };
+type NutritionTargets = { kcal: number; carbs: number; protein: number; fat: number };
 type AppData = {
   reflections: Reflection[];
   practiceLogs: Record<string, Outcome>;
@@ -73,6 +75,7 @@ type AppData = {
   routines: Record<string, boolean>;
   rituals: Ritual[];
   foodEntries: FoodEntry[];
+  nutritionTargets: NutritionTargets;
 };
 
 type BeforeInstallPromptEvent = Event & {
@@ -123,7 +126,7 @@ function shortDate(value: string) {
 }
 
 function emptyData(): AppData {
-  return { reflections: [], practiceLogs: {}, healthCheckins: {}, routines: {}, rituals: [], foodEntries: [] };
+  return { reflections: [], practiceLogs: {}, healthCheckins: {}, routines: {}, rituals: [], foodEntries: [], nutritionTargets: { kcal: 0, carbs: 0, protein: 0, fat: 0 } };
 }
 
 function loadData(): AppData {
@@ -137,6 +140,10 @@ function loadData(): AppData {
       routines: source.routines && typeof source.routines === "object" ? source.routines : {},
       rituals: Array.isArray(source.rituals) ? source.rituals : [],
       foodEntries: Array.isArray(source.foodEntries) ? source.foodEntries : [],
+      nutritionTargets: source.nutritionTargets && typeof source.nutritionTargets === "object" ? {
+        kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
+        protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
+      } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
     };
   } catch {
     return emptyData();
@@ -174,6 +181,11 @@ function PageHeading({ eyebrow, title, description, action }: { eyebrow: string;
 
 function UtensilsGlyph({ size = 20 }: { size?: number }) {
   return <span style={{ fontSize: size, lineHeight: 1 }} aria-hidden="true">⌁</span>;
+}
+
+function nutritionProgress(value: number, target: number, unit: string) {
+  const shownValue = value.toLocaleString("id-ID");
+  return target > 0 ? `${shownValue} / ${target.toLocaleString("id-ID")} ${unit}` : `${shownValue} ${unit}`;
 }
 
 export default function Home() {
@@ -327,6 +339,14 @@ export default function Home() {
     toast.success("Catatan nutrisi dihapus.");
   }
 
+  function saveNutritionTargets(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const numberValue = (field: string) => Math.max(0, Number(form.get(field)) || 0);
+    updateData(previous => ({ ...previous, nutritionTargets: { kcal: numberValue("targetKcal"), carbs: numberValue("targetCarbs"), protein: numberValue("targetProtein"), fat: numberValue("targetFat") } }));
+    toast.success("Target nutrisi pribadi disimpan.");
+  }
+
   function exportData() {
     const file = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(file);
@@ -351,6 +371,10 @@ export default function Home() {
           routines: source.routines && typeof source.routines === "object" ? source.routines : {},
           rituals: Array.isArray(source.rituals) ? source.rituals : [],
           foodEntries: Array.isArray(source.foodEntries) ? source.foodEntries : [],
+          nutritionTargets: source.nutritionTargets && typeof source.nutritionTargets === "object" ? {
+            kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
+            protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
+          } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
         });
         toast.success("Cadangan berhasil dipulihkan.");
       } catch { toast.error("File tidak terbaca. Pilih cadangan Ruang Tumbuh yang valid."); }
@@ -440,7 +464,8 @@ export default function Home() {
           <form className="health-form panel-paper" onSubmit={saveHealth}><div className="panel-head"><div><p className="eyebrow">CHECK-IN TUBUH</p><h2>Bagaimana keadaanmu hari ini?</h2></div><span className="date-stamp">hari ini</span></div><div className="health-fields"><label>Tidur (jam)<input type="number" name="sleep" min="0" max="24" step="0.5" defaultValue={currentCheckin.sleep} placeholder="mis. 7,5" /></label><label>Energi (1–5)<select name="energy" defaultValue={currentCheckin.energy}><option value="">Pilih</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></label><label>Suasana hati (1–5)<select name="mood" defaultValue={currentCheckin.mood}><option value="">Pilih</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></label><label>Air minum (gelas)<input type="number" name="water" min="0" max="50" defaultValue={currentCheckin.water} placeholder="mis. 6" /></label><label>Gerak (menit)<input type="number" name="movement" min="0" max="1440" defaultValue={currentCheckin.movement} placeholder="mis. 30" /></label></div><label>Catatan tubuh hari ini<textarea name="note" rows={3} defaultValue={currentCheckin.note} placeholder="Contoh: Bahu terasa tegang setelah duduk lama; berjalan sore membuatku lebih tenang." /></label><div className="form-actions"><p>Hanya catat yang membantumu melihat pola.</p><button type="submit" className="primary-button">Simpan check-in <ArrowRight size={17} /></button></div></form>
           <section className="routine-section"><div className="section-title"><div><p className="eyebrow">RITUAL PRIBADIMU</p><h2>Yang ingin kamu rawat hari ini</h2></div><strong className="routine-count">{routinesDone}/{data.rituals.length}</strong></div>{data.rituals.length ? <div className="routine-grid">{data.rituals.map(item => { const done = data.routines[`${today}-${item.id}`]; return <article key={item.id} className={done ? "routine-card routine-card--done" : "routine-card"}><button type="button" className="routine-toggle-card" onClick={() => toggleRoutine(item.id)} aria-pressed={done}><span className="routine-icon">{done ? <Check size={18} /> : "◌"}</span><small>{item.area}</small><strong>{item.label}</strong></button><button type="button" className="routine-delete" onClick={() => deleteRitual(item.id)} aria-label={`Hapus ritual ${item.label}`}><Trash2 size={15} /></button></article>; })}</div> : <div className="ritual-empty"><span>✦</span><div><h3>Belum ada ritual pribadi.</h3><p>Tambahkan ritual kecil yang benar-benar sesuai dengan hidupmu saat ini.</p></div></div>}<form className="ritual-form" onSubmit={addRitual}><div><p className="eyebrow">TAMBAH RITUAL</p><h3>Buat daftar yang lebih personal</h3></div><label>Nama ritual<input required name="ritualLabel" maxLength={80} placeholder="Contoh: Menyiapkan botol minum untuk besok" /></label><label>Area (opsional)<input name="ritualArea" maxLength={40} placeholder="Contoh: Hidrasi" /></label><button type="submit" className="primary-button"><Plus size={16} /> Tambahkan</button></form></section>
           <section className="nutrition-section"><div className="section-title"><div><p className="eyebrow">TRACKER MAKAN & MINUM</p><h2>Kenali asupanmu, dengan netral</h2></div><span className="entry-count"><Coffee size={16} /> {todayFoodEntries.length} catatan hari ini</span></div>
-            <div className="nutrition-overview"><article className="nutrition-kcal"><div><p className="eyebrow">TOTAL HARI INI</p><strong>{nutritionTotals.kcal.toLocaleString("id-ID")} <small>kcal</small></strong><p>Diinput mandiri, tanpa target atau penilaian.</p></div><span><UtensilsGlyph /></span></article><div className="macro-grid"><article><span>Karbohidrat</span><strong>{nutritionTotals.carbs.toLocaleString("id-ID")}<small>g</small></strong><i className="macro-bar macro-bar--carbs" /></article><article><span>Protein</span><strong>{nutritionTotals.protein.toLocaleString("id-ID")}<small>g</small></strong><i className="macro-bar macro-bar--protein" /></article><article><span>Lemak</span><strong>{nutritionTotals.fat.toLocaleString("id-ID")}<small>g</small></strong><i className="macro-bar macro-bar--fat" /></article></div></div>
+            <form className="nutrition-target-form" onSubmit={saveNutritionTargets}><div className="target-form-intro"><p className="eyebrow">TARGET PRIBADI HARIAN</p><h3>Atur angka yang ingin kamu pantau</h3><p>Kosongkan atau isi 0 bila tidak memakai target. Tidak ada rekomendasi otomatis.</p></div><div className="target-inputs"><label>Kalori (kcal)<input name="targetKcal" type="number" min="0" step="1" inputMode="numeric" defaultValue={data.nutritionTargets.kcal || ""} placeholder="mis. 2000" /></label><label>Karbohidrat (g)<input name="targetCarbs" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.carbs || ""} placeholder="mis. 250" /></label><label>Protein (g)<input name="targetProtein" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.protein || ""} placeholder="mis. 90" /></label><label>Lemak (g)<input name="targetFat" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.fat || ""} placeholder="mis. 65" /></label></div><button type="submit" className="target-save">Simpan target <ArrowRight size={15} /></button></form>
+            <div className="nutrition-overview"><article className="nutrition-kcal"><div><p className="eyebrow">TOTAL HARI INI</p><strong>{nutritionTotals.kcal.toLocaleString("id-ID")} <small>kcal</small></strong><p>{data.nutritionTargets.kcal > 0 ? `Target pribadi: ${data.nutritionTargets.kcal.toLocaleString("id-ID")} kcal.` : "Diinput mandiri, tanpa target atau penilaian."}</p></div><span><UtensilsGlyph /></span></article><div className="macro-grid"><article><span>Karbohidrat</span><strong>{nutritionTotals.carbs.toLocaleString("id-ID")}<small>g</small></strong><p>{nutritionProgress(nutritionTotals.carbs, data.nutritionTargets.carbs, "g")}</p><i className="macro-bar macro-bar--carbs" /></article><article><span>Protein</span><strong>{nutritionTotals.protein.toLocaleString("id-ID")}<small>g</small></strong><p>{nutritionProgress(nutritionTotals.protein, data.nutritionTargets.protein, "g")}</p><i className="macro-bar macro-bar--protein" /></article><article><span>Lemak</span><strong>{nutritionTotals.fat.toLocaleString("id-ID")}<small>g</small></strong><p>{nutritionProgress(nutritionTotals.fat, data.nutritionTargets.fat, "g")}</p><i className="macro-bar macro-bar--fat" /></article></div></div>
             <div className="nutrition-workspace"><form className="nutrition-form panel-paper" onSubmit={addFoodEntry}><div className="panel-head"><div><p className="eyebrow">TAMBAH CATATAN MANUAL</p><h2>Makan atau minum apa?</h2></div><span className="date-stamp">{shortDate(today)}</span></div><p className="form-intro">Masukkan angka yang kamu ketahui atau ingin catat sendiri. Semua kolom nutrisi bersifat opsional.</p><div className="nutrition-primary-fields"><label>Jenis konsumsi<select name="type" defaultValue="Makanan"><option>Makanan</option><option>Minuman</option></select></label><label>Waktu konsumsi<select name="meal" defaultValue="Sarapan"><option>Sarapan</option><option>Makan siang</option><option>Makan malam</option><option>Camilan</option><option>Minuman</option><option>Lainnya</option></select></label><label className="food-name-field">Nama makanan/minuman<input required name="name" maxLength={100} placeholder="Contoh: Nasi, ayam, dan sayur" /></label></div><div className="macro-input-grid"><label>Kalori (kcal)<input name="kcal" type="number" min="0" step="1" inputMode="numeric" placeholder="0" /></label><label>Karbohidrat (g)<input name="carbs" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label><label>Protein (g)<input name="protein" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label><label>Lemak (g)<input name="fat" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label></div><div className="nutrition-actions"><p><GlassWater size={16} /> Data dicatat secara lokal di perangkat ini.</p><button type="submit" className="primary-button"><Plus size={16} /> Tambahkan</button></div></form>
               <article className="food-log panel-paper"><div className="panel-head"><div><p className="eyebrow">CATATAN HARI INI</p><h2>Makan & minum</h2></div><span className="food-log-mark">✦</span></div>{todayFoodEntries.length ? <div className="food-log-list">{todayFoodEntries.map(entry => <article key={entry.id} className="food-log-entry"><div className={entry.type === "Minuman" ? "food-type food-type--drink" : "food-type"}>{entry.type === "Minuman" ? <GlassWater size={15} /> : <UtensilsGlyph size={15} />}</div><div className="food-entry-copy"><div><span>{entry.meal}</span><h3>{entry.name}</h3></div><p><strong>{entry.kcal} kcal</strong><span>· {entry.carbs}g karbo</span><span>· {entry.protein}g protein</span><span>· {entry.fat}g lemak</span></p></div><button type="button" className="entry-delete" onClick={() => deleteFoodEntry(entry.id)} aria-label={`Hapus ${entry.name}`}><Trash2 size={16} /></button></article>)}</div> : <div className="food-log-empty"><img src={emptyStateImage} alt="" /><p>Belum ada makanan atau minuman yang dicatat hari ini.</p></div>}</article></div>
           </section>

@@ -10,10 +10,9 @@
   "theme_color": "#f45b8a",
   "orientation": "portrait",
   "icons": [
-    { "src": "/manus-storage/ruang_tumbuh_icons_87ac14b7.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/manus-storage/ruang_tumbuh_icons_512_c29cd8f9.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "/manus-storage/ruang-tumbuh-icon-closeup_a590a1b3.png", "sizes": "1920x1920", "type": "image/png", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "Catat kejadian", "short_name": "Catat", "url": "/?view=capture", "icons": [{ "src": "/manus-storage/ruang_tumbuh_icons_87ac14b7.png", "sizes": "192x192" }] }
+    { "name": "Catat kejadian", "short_name": "Catat", "url": "/?view=capture", "icons": [{ "src": "/manus-storage/ruang-tumbuh-icon-closeup_a590a1b3.png", "sizes": "1920x1920" }] }
   ]
 }

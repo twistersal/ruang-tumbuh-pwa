@@ -11,3 +11,10 @@
 - [x] Ganti ritual bawaan dengan daftar yang dapat ditambah dan dihapus mandiri.
 - [x] Pertahankan penandaan selesai per ritual setiap hari.
 - [x] Uji tambah, hapus, penandaan selesai, responsivitas, dan build produksi.
+
+## Ikon Close-up & Target Nutrisi
+
+- [x] Buat ikon close-up rambut, wajah, dan leher dari karakter referensi.
+- [x] Tambahkan model target manual untuk kalori, karbohidrat, protein, dan lemak.
+- [x] Tampilkan input target serta progres harian dari catatan nutrisi.
+- [x] Uji aset ikon, target, responsivitas, dan build produksi.
