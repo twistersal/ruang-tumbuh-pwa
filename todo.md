@@ -55,3 +55,9 @@
 - [x] Pindahkan ritual ke daftar Jadwal harian.
 - [x] Tambahkan rencana Kebugaran di Kesehatan yang otomatis muncul di Jadwal.
 - [x] Uji migrasi data lokal, navigasi, responsivitas, dan build produksi.
+
+## Perapian Halaman Catat
+
+- [x] Satukan angka langkah, judul, deskripsi, dan input dalam satu kartu formulir.
+- [x] Hilangkan tumpang tindih header langkah pada tampilan mobile.
+- [x] Uji halaman Catat pada desktop, smartphone, dan build produksi.

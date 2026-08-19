@@ -5,6 +5,7 @@ import "./index.css";
 import "./pages/nutrition-targets.css";
 import "./pages/schedule.css";
 import "./pages/journal-spine.css";
+import "./pages/capture-layout.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
