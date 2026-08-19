@@ -35,3 +35,9 @@
 - [x] Tambahkan perhitungan persentase capaian untuk setiap target nutrisi.
 - [x] Tampilkan progress bar visual untuk kalori dan tiga makronutrisi.
 - [x] Uji tampilan progres pada desktop, smartphone, dan build produksi.
+
+## Animasi Progress Bar Nutrisi
+
+- [x] Tambahkan pemicu animasi setelah entri nutrisi baru disimpan.
+- [x] Terapkan gerakan isi bar dan penegasan angka yang singkat.
+- [x] Uji animasi, preferensi pengurangan gerak, dan build produksi.
