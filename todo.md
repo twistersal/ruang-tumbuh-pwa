@@ -61,3 +61,11 @@
 - [x] Satukan angka langkah, judul, deskripsi, dan input dalam satu kartu formulir.
 - [x] Hilangkan tumpang tindih header langkah pada tampilan mobile.
 - [x] Uji halaman Catat pada desktop, smartphone, dan build produksi.
+
+## Perapian Refleksi & Jadwal
+
+- [x] Beri jarak yang lebih jelas antara kartu catatan dan langkah kecil di Refleksi.
+- [x] Hapus blok kuning, indikator aktif pink, dan penanda dekoratif yang mengganggu teks Refleksi/Jadwal.
+- [x] Hapus pita pink, lingkaran hari ini, lingkaran jumlah item, dan tab hijau pada kartu Kebugaran.
+- [x] Hapus bagan ritual duplikatif dari Jadwal.
+- [x] Uji Refleksi dan Jadwal pada smartphone serta build produksi.
