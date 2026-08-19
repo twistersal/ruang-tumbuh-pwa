@@ -41,3 +41,9 @@
 - [x] Tambahkan pemicu animasi setelah entri nutrisi baru disimpan.
 - [x] Terapkan gerakan isi bar dan penegasan angka yang singkat.
 - [x] Uji animasi, preferensi pengurangan gerak, dan build produksi.
+
+## Animasi Angka Total Nutrisi
+
+- [x] Tambahkan penghitung angka yang bergerak menuju total baru saat entri disimpan.
+- [x] Selaraskan durasi dan pemicu angka dengan animasi progress bar.
+- [x] Uji tampilan, preferensi pengurangan gerak, dan build produksi.
