@@ -1,3 +1,4 @@
+/** Style reminder — Pocket Field Notes: keep the application wrapper light and maintain the warm light theme. */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
