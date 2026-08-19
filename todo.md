@@ -29,3 +29,9 @@
 - [x] Audit resolusi modul React, konfigurasi runtime, dan cache browser/service worker.
 - [x] Terapkan perbaikan yang tidak menghapus perubahan sesi lain.
 - [x] Verifikasi pratinjau, tipe, dan build produksi setelah perbaikan.
+
+## Progress Bar Target Nutrisi
+
+- [x] Tambahkan perhitungan persentase capaian untuk setiap target nutrisi.
+- [x] Tampilkan progress bar visual untuk kalori dan tiga makronutrisi.
+- [x] Uji tampilan progres pada desktop, smartphone, dan build produksi.
