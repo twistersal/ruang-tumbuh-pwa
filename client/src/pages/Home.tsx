@@ -31,7 +31,6 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import "./nutrition-targets.css";
 
 type Page = "dashboard" | "capture" | "reflections" | "practice" | "health" | "review";
 type Outcome = "berhasil" | "sebagian" | "belum";

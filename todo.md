@@ -18,3 +18,14 @@
 - [x] Tambahkan model target manual untuk kalori, karbohidrat, protein, dan lemak.
 - [x] Tampilkan input target serta progres harian dari catatan nutrisi.
 - [x] Uji aset ikon, target, responsivitas, dan build produksi.
+
+## Pemulihan Sinkronisasi Pratinjau
+
+- [x] Periksa galat konteks tema setelah sinkronisasi sesi.
+- [x] Pulihkan kompatibilitas runtime dan verifikasi pratinjau.
+
+## Investigasi Runtime Lanjutan
+
+- [x] Audit resolusi modul React, konfigurasi runtime, dan cache browser/service worker.
+- [x] Terapkan perbaikan yang tidak menghapus perubahan sesi lain.
+- [x] Verifikasi pratinjau, tipe, dan build produksi setelah perbaikan.

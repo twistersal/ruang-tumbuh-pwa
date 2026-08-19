@@ -1,6 +1,6 @@
 /* Pocket Field Notes PWA cache: app shell first, then cache assets during normal use. */
-const CACHE_NAME = "ruang-tumbuh-pocket-notes-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/manus-storage/ruang_tumbuh_icons_87ac14b7.png", "/manus-storage/ruang_tumbuh_icons_512_c29cd8f9.png"];
+const CACHE_NAME = "ruang-tumbuh-pocket-notes-v3";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/manus-storage/ruang-tumbuh-icon-closeup_a590a1b3.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -14,6 +14,8 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.pathname.startsWith("/@") || requestUrl.pathname.startsWith("/src/") || requestUrl.pathname.startsWith("/node_modules/") || requestUrl.pathname.includes("/@fs/")) return;
   if (event.request.mode === "navigate") {
     event.respondWith(fetch(event.request).then((response) => {
       const copy = response.clone();
