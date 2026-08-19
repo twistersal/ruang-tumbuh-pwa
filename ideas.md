@@ -39,3 +39,5 @@
 - Layar pertama selalu menampilkan wordmark editorial dua baris **Ruang Tumbuh** beserta monogram daun-panah; sapaan halaman hanya berfungsi sebagai konteks pendukung.
 - Pada desktop, navigasi pita vertikal dan tab sisi terlihat sebagai struktur buku saku; konten utama menggunakan susunan yang sedikit bergeser, bukan deret dashboard yang seragam.
 - Coral Bloom dipakai khusus untuk momen identitas, bidang ilustrasi, dan aksen emosional; hijau lumut dipakai untuk aksi serta indikator kebiasaan/progres; warna pastel lain hanya berfungsi sebagai variasi material kertas.
+- Setiap halaman interior memperlihatkan pita penanda **Ruang · Tumbuh** pada desktop, sementara sidebar menjadi tulang buku yang tetap terlihat; bentuk ini memastikan navigasi dan wordmark terasa sebagai bagian dari satu buku saku, bukan kontrol aplikasi yang terpisah.
+- Kartu formulir dan ringkasan pada halaman interior memakai tab, garis putus-putus, serta pergeseran kecil seperti lembar kertas yang dikumpulkan; Coral Bloom selalu hadir sebagai aksen identitas pada penanda dan momen utama.

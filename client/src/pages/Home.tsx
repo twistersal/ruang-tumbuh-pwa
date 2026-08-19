@@ -31,8 +31,9 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
-type Page = "dashboard" | "capture" | "reflections" | "practice" | "health" | "review";
+type Page = "dashboard" | "capture" | "reflections" | "schedule" | "health" | "review";
 type Outcome = "berhasil" | "sebagian" | "belum";
 
 type Reflection = {
@@ -67,6 +68,8 @@ type FoodEntry = {
   fat: number;
 };
 type NutritionTargets = { kcal: number; carbs: number; protein: number; fat: number };
+type ScheduleTask = { id: string; date: string; time: string; title: string; note: string; done: boolean };
+type FitnessPlan = { id: string; date: string; time: string; activity: string; duration: string; note: string; done: boolean };
 type AppData = {
   reflections: Reflection[];
   practiceLogs: Record<string, Outcome>;
@@ -75,6 +78,8 @@ type AppData = {
   rituals: Ritual[];
   foodEntries: FoodEntry[];
   nutritionTargets: NutritionTargets;
+  scheduleTasks: ScheduleTask[];
+  fitnessPlans: FitnessPlan[];
 };
 
 type BeforeInstallPromptEvent = Event & {
@@ -92,8 +97,8 @@ const logoMark = "/manus-storage/ruang-tumbuh-logo_c327dcaa.png";
 const pageInfo: Record<Page, { label: string; title: string; prompt: string }> = {
   dashboard: { label: "Beranda", title: "Selamat datang", prompt: "Satu langkah pada satu waktu." },
   capture: { label: "Catat kejadian", title: "Mulai dari fakta", prompt: "Apa yang benar-benar terjadi hari ini?" },
-  reflections: { label: "Refleksi", title: "Yang sedang kamu pelajari", prompt: "Temukan pola, bukan alasan untuk menghukum diri." },
-  practice: { label: "Latihan", title: "Langkah kecilmu", prompt: "Perubahan terbentuk dari pengulangan kecil." },
+  reflections: { label: "Refleksi & langkah", title: "Yang sedang kamu pelajari", prompt: "Temukan pola dan pilih langkah kecil yang bisa dicoba." },
+  schedule: { label: "Jadwal", title: "Hari yang bisa kamu kelola", prompt: "Susun hal kecil untuk dirawat hari ini." },
   health: { label: "Kesehatan", title: "Dukung tubuhmu", prompt: "Data tubuh adalah isyarat, bukan penilaian." },
   review: { label: "Tinjauan", title: "Lihat pola minggu ini", prompt: "Perbaiki sistemnya dengan rasa ingin tahu." },
 };
@@ -102,7 +107,7 @@ const navItems: { id: Page; icon: typeof HomeIcon }[] = [
   { id: "dashboard", icon: HomeIcon },
   { id: "capture", icon: CirclePlus },
   { id: "reflections", icon: BookOpenText },
-  { id: "practice", icon: Sparkles },
+  { id: "schedule", icon: CalendarDays },
   { id: "health", icon: HeartPulse },
   { id: "review", icon: BarChart3 },
 ];
@@ -125,7 +130,7 @@ function shortDate(value: string) {
 }
 
 function emptyData(): AppData {
-  return { reflections: [], practiceLogs: {}, healthCheckins: {}, routines: {}, rituals: [], foodEntries: [], nutritionTargets: { kcal: 0, carbs: 0, protein: 0, fat: 0 } };
+  return { reflections: [], practiceLogs: {}, healthCheckins: {}, routines: {}, rituals: [], foodEntries: [], nutritionTargets: { kcal: 0, carbs: 0, protein: 0, fat: 0 }, scheduleTasks: [], fitnessPlans: [] };
 }
 
 function loadData(): AppData {
@@ -143,6 +148,8 @@ function loadData(): AppData {
         kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
         protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
       } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+      scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks : [],
+      fitnessPlans: Array.isArray(source.fitnessPlans) ? source.fitnessPlans : [],
     };
   } catch {
     return emptyData();
@@ -227,6 +234,7 @@ function NutritionProgressBar({ value, target, tone, label, pulseKey }: { value:
 export default function Home() {
   const [page, setPage] = useState<Page>(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
+    if (requestedView === "practice") return "reflections";
     return navItems.some(item => item.id === requestedView) ? requestedView as Page : "dashboard";
   });
   const [data, setData] = useState<AppData>(() => loadData());
@@ -268,6 +276,10 @@ export default function Home() {
     protein: total.protein + entry.protein,
     fat: total.fat + entry.fat,
   }), { kcal: 0, carbs: 0, protein: 0, fat: 0 }), [todayFoodEntries]);
+  const todayScheduleTasks = useMemo(() => data.scheduleTasks.filter(task => task.date === today).sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")), [data.scheduleTasks, today]);
+  const todayFitnessPlans = useMemo(() => data.fitnessPlans.filter(plan => plan.date === today).sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")), [data.fitnessPlans, today]);
+  const scheduleDone = todayScheduleTasks.filter(task => task.done).length + todayFitnessPlans.filter(plan => plan.done).length;
+  const scheduleTotal = todayScheduleTasks.length + todayFitnessPlans.length;
 
   function goTo(next: Page) {
     setPage(next);
@@ -303,7 +315,7 @@ export default function Home() {
     updateData(previous => ({ ...previous, reflections: [entry, ...previous.reflections] }));
     event.currentTarget.reset();
     toast.success("Refleksi tersimpan secara lokal di perangkat ini.");
-    goTo(entry.action ? "practice" : "reflections");
+    goTo("reflections");
   }
 
   function logPractice(entryId: string, outcome: Outcome) {
@@ -349,6 +361,50 @@ export default function Home() {
       routines: Object.fromEntries(Object.entries(previous.routines).filter(([key]) => !key.endsWith(`-${ritualId}`))),
     }));
     toast.success("Ritual dihapus dari daftar.");
+  }
+
+  function addScheduleTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const task: ScheduleTask = {
+      id: crypto.randomUUID(), date: today, time: String(form.get("time") || ""),
+      title: String(form.get("title") || "").trim(), note: String(form.get("note") || "").trim(), done: false,
+    };
+    if (!task.title) return;
+    updateData(previous => ({ ...previous, scheduleTasks: [...previous.scheduleTasks, task] }));
+    event.currentTarget.reset();
+    toast.success("Kegiatan masuk ke Jadwal hari ini.");
+  }
+
+  function setScheduleTaskDone(taskId: string, done: boolean) {
+    updateData(previous => ({ ...previous, scheduleTasks: previous.scheduleTasks.map(task => task.id === taskId ? { ...task, done } : task) }));
+  }
+
+  function deleteScheduleTask(taskId: string) {
+    updateData(previous => ({ ...previous, scheduleTasks: previous.scheduleTasks.filter(task => task.id !== taskId) }));
+    toast.success("Kegiatan dihapus dari Jadwal.");
+  }
+
+  function addFitnessPlan(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const plan: FitnessPlan = {
+      id: crypto.randomUUID(), date: today, time: String(form.get("fitnessTime") || ""), activity: String(form.get("fitnessActivity") || "").trim(),
+      duration: String(form.get("fitnessDuration") || "").trim(), note: String(form.get("fitnessNote") || "").trim(), done: false,
+    };
+    if (!plan.activity) return;
+    updateData(previous => ({ ...previous, fitnessPlans: [...previous.fitnessPlans, plan] }));
+    event.currentTarget.reset();
+    toast.success("Rencana Kebugaran masuk ke Jadwal hari ini.");
+  }
+
+  function setFitnessPlanDone(planId: string, done: boolean) {
+    updateData(previous => ({ ...previous, fitnessPlans: previous.fitnessPlans.map(plan => plan.id === planId ? { ...plan, done } : plan) }));
+  }
+
+  function deleteFitnessPlan(planId: string) {
+    updateData(previous => ({ ...previous, fitnessPlans: previous.fitnessPlans.filter(plan => plan.id !== planId) }));
+    toast.success("Rencana Kebugaran dihapus.");
   }
 
   function addFoodEntry(event: FormEvent<HTMLFormElement>) {
@@ -413,6 +469,8 @@ export default function Home() {
             kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
             protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
           } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+          scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks : [],
+          fitnessPlans: Array.isArray(source.fitnessPlans) ? source.fitnessPlans : [],
         });
         toast.success("Cadangan berhasil dipulihkan.");
       } catch { toast.error("File tidak terbaca. Pilih cadangan Ruang Tumbuh yang valid."); }
@@ -464,12 +522,12 @@ export default function Home() {
           </section>
 
           <section className="section-block"><div className="section-title"><div><p className="eyebrow">GAMBARAN HARI INI</p><h2>Perjalananmu</h2></div><button type="button" className="text-button" onClick={() => goTo("review")}>Lihat tinjauan <ChevronRight size={16} /></button></div>
-            <div className="stats-row"><StatCard value={data.reflections.length} label="kejadian dicatat" tone="pink" /><StatCard value={practices.length} label="latihan aktif" tone="green" /><StatCard value={`${routinesDone}/${data.rituals.length}`} label="ritual pribadi selesai" tone="yellow" /><StatCard value={dueReviews} label="tinjauan yang menunggu" /></div>
+            <div className="stats-row"><StatCard value={data.reflections.length} label="kejadian dicatat" tone="pink" /><StatCard value={practices.length} label="langkah aktif" tone="green" /><StatCard value={`${routinesDone}/${data.rituals.length}`} label="ritual pribadi selesai" tone="yellow" /><StatCard value={dueReviews} label="tinjauan yang menunggu" /></div>
           </section>
 
           <section className="dashboard-notes">
-            <article className="active-practice panel-paper"><div className="panel-head"><div><p className="eyebrow">LANGKAH BERIKUTNYA</p><h2>Latihan aktif</h2></div><button type="button" className="round-link" onClick={() => goTo("practice")} aria-label="Buka latihan"><ArrowRight size={18} /></button></div>
-              {practices.length ? <div className="practice-preview">{practices.slice(0, 2).map(item => <div key={item.id}><span>Eksperimen</span><h3>{item.title}</h3><p>{item.action}</p></div>)}</div> : <div className="empty-inline"><img src={emptyStateImage} alt="" /><div><h3>Belum ada latihan aktif</h3><p>Setelah mencatat, pilih satu tindakan kecil yang dapat kamu coba.</p><button type="button" className="text-button" onClick={() => goTo("capture")}>Catat kejadian <ArrowRight size={14} /></button></div></div>}
+            <article className="active-practice panel-paper"><div className="panel-head"><div><p className="eyebrow">LANGKAH BERIKUTNYA</p><h2>Refleksi & langkah</h2></div><button type="button" className="round-link" onClick={() => goTo("reflections")} aria-label="Buka refleksi dan langkah"><ArrowRight size={18} /></button></div>
+              {practices.length ? <div className="practice-preview">{practices.slice(0, 2).map(item => <div key={item.id}><span>Eksperimen</span><h3>{item.title}</h3><p>{item.action}</p></div>)}</div> : <div className="empty-inline"><img src={emptyStateImage} alt="" /><div><h3>Belum ada langkah aktif</h3><p>Setelah mencatat, pilih satu tindakan kecil yang dapat kamu coba.</p><button type="button" className="text-button" onClick={() => goTo("capture")}>Catat kejadian <ArrowRight size={14} /></button></div></div>}
             </article>
             <aside className="note-card"><span className="note-pin">✦</span><p className="eyebrow">PENGINGAT LEMBUT</p><blockquote>“Tanggung jawab bukan tentang menyalahkan diri; melainkan mengurus bagian yang memang menjadi bagianmu.”</blockquote><small>— untuk dirimu hari ini</small></aside>
           </section>
@@ -488,24 +546,29 @@ export default function Home() {
           </form>
         </section>}
 
-        {page === "reflections" && <section className="page page--active"><PageHeading eyebrow="REFLEKSI" title="Temukan pola, bukan alasan untuk menghukum diri." description="Kumpulkan pelajaran dari kejadian-kejadian kecil, lalu buka lagi saat kamu perlu melihat arah." action={<button type="button" className="primary-button" onClick={() => goTo("capture")}><Plus size={16} /> Catat baru</button>} />
+        {page === "reflections" && <section className="page page--active"><PageHeading eyebrow="REFLEKSI & LANGKAH" title="Pahami yang terjadi, lalu pilih langkah kecil." description="Kumpulkan pelajaran dari kejadian-kejadian kecil dan rawat eksperimen perilaku yang lahir darinya." action={<button type="button" className="primary-button" onClick={() => goTo("capture")}><Plus size={16} /> Catat baru</button>} />
           <div className="filter-row">{activeCategories.map(category => <button type="button" key={category} className={filter === category ? "filter-chip filter-chip--active" : "filter-chip"} onClick={() => setFilter(category)}>{category}</button>)}</div>
           {recentReflections.filter(entry => filter === "Semua" || entry.category === filter).length ? <div className="reflection-grid reflection-grid--full">{recentReflections.filter(entry => filter === "Semua" || entry.category === filter).map(entry => <ReflectionCard key={entry.id} entry={entry} onOpen={() => setSelected(entry)} />)}</div> : <div className="empty-page"><img src={emptyStateImage} alt="" /><h3>Belum ada catatan di sini.</h3><p>Mulai dengan satu kejadian yang ingin kamu pahami.</p><button type="button" className="text-button" onClick={() => goTo("capture")}>Catat kejadian <ArrowRight size={14} /></button></div>}
+          <section className="steps-section panel-paper"><div className="panel-head"><div><p className="eyebrow">LANGKAH KECIL</p><h2>Eksperimen yang sedang kamu rawat</h2></div><span className="date-stamp">{practices.length} aktif</span></div>{practices.length ? <div className="practice-list">{practices.map(entry => { const outcome = data.practiceLogs[`${today}-${entry.id}`]; return <article className="practice-card" key={entry.id}><div className="practice-content"><div className="practice-date"><CalendarDays size={15} /> Sejak {displayDate(entry.actionStart || entry.date)}</div><h3>{entry.title}</h3><p>{entry.action}</p></div><div className="outcome-list"><span>Hari ini terasa…</span><div>{(["berhasil", "sebagian", "belum"] as Outcome[]).map(item => <button key={item} type="button" className={outcome === item ? `outcome-button outcome-button--${item} outcome-button--selected` : `outcome-button outcome-button--${item}`} onClick={() => logPractice(entry.id, item)}>{item === "berhasil" ? <Check size={15} /> : item === "sebagian" ? <MoreHorizontal size={16} /> : <X size={15} />}{item === "berhasil" ? "Berhasil" : item === "sebagian" ? "Sebagian" : "Belum"}</button>)}</div></div></article>; })}</div> : <div className="empty-inline"><img src={emptyStateImage} alt="" /><div><h3>Belum ada langkah aktif</h3><p>Tambahkan eksperimen perilaku saat menulis refleksi untuk melihatnya di sini.</p></div></div>}</section>
         </section>}
 
-        {page === "practice" && <section className="page page--active"><PageHeading eyebrow="LATIHAN HARIAN" title="Buktikan perubahan melalui langkah kecil." description="Nilai ini bukan rapor tentang dirimu. Ia adalah informasi agar eksperimenmu dapat diperbaiki." />
-          {practices.length ? <div className="practice-list">{practices.map(entry => { const outcome = data.practiceLogs[`${today}-${entry.id}`]; return <article className="practice-card" key={entry.id}><div className="practice-content"><div className="practice-date"><CalendarDays size={15} /> Eksperimen sejak {displayDate(entry.actionStart || entry.date)}</div><h3>{entry.title}</h3><p>{entry.action}</p></div><div className="outcome-list"><span>Hari ini terasa…</span><div>{(["berhasil", "sebagian", "belum"] as Outcome[]).map(item => <button key={item} type="button" className={outcome === item ? `outcome-button outcome-button--${item} outcome-button--selected` : `outcome-button outcome-button--${item}`} onClick={() => logPractice(entry.id, item)}>{item === "berhasil" ? <Check size={15} /> : item === "sebagian" ? <MoreHorizontal size={16} /> : <X size={15} />}{item === "berhasil" ? "Berhasil" : item === "sebagian" ? "Sebagian" : "Belum"}</button>)}</div></div></article>; })}</div> : <div className="empty-page empty-page--large"><img src={characterIcon} alt="" /><p className="eyebrow">LANGKAH PERTAMA</p><h3>Belum ada latihan aktif.</h3><p>Di akhir refleksi, tuliskan satu perubahan perilaku yang ingin kamu coba.</p><button type="button" className="primary-button" onClick={() => goTo("capture")}>Catat kejadian <ArrowRight size={16} /></button></div>}
+        {page === "schedule" && <section className="page page--active schedule-page"><PageHeading eyebrow="JADWAL HARI INI" title="Beri ruang untuk hal yang perlu dikerjakan." description="Simpan kegiatan, ritual, dan rencana hari ini di satu halaman sederhana." action={<span className="date-stamp">{displayDate(today)}</span>} />
+          <section className="schedule-summary"><article><p className="eyebrow">CHECKPOINT HARI INI</p><strong>{scheduleDone}/{scheduleTotal}</strong><span>kegiatan selesai</span></article><div><p>Jadwal tidak harus penuh untuk terasa berarti.</p><small>Atur yang membantu, sisakan ruang untuk bernafas.</small></div></section>
+          <div className="schedule-layout"><section className="schedule-main"><form className="schedule-form panel-paper" onSubmit={addScheduleTask}><div className="panel-head"><div><p className="eyebrow">TAMBAH KEGIATAN</p><h2>Apa yang ingin kamu lakukan?</h2></div><span className="schedule-tab">hari ini</span></div><div className="schedule-inputs"><label>Jam (opsional)<input name="time" type="time" /></label><label>Nama kegiatan<input required name="title" maxLength={100} placeholder="Contoh: Mengirim revisi laporan" /></label><label className="schedule-note-field">Keterangan (opsional)<input name="note" maxLength={150} placeholder="Contoh: Cek ulang lampiran sebelum dikirim" /></label></div><button type="submit" className="primary-button"><Plus size={16} /> Masukkan ke Jadwal</button></form>
+            <article className="schedule-list panel-paper"><div className="panel-head"><div><p className="eyebrow">TO-DO HARI INI</p><h2>Urutan yang bisa kamu pegang</h2></div><span className="entry-count">{todayScheduleTasks.length} item</span></div>{todayScheduleTasks.length ? <div className="schedule-items">{todayScheduleTasks.map(task => <article key={task.id} className={task.done ? "schedule-item schedule-item--done" : "schedule-item"}><Checkbox id={`task-${task.id}`} className="schedule-check" checked={task.done} onCheckedChange={(checked) => setScheduleTaskDone(task.id, checked === true)} /><div className="schedule-time">{task.time || "kapan saja"}</div><label className="schedule-copy" htmlFor={`task-${task.id}`}><h3>{task.title}</h3>{task.note && <p>{task.note}</p>}</label><button type="button" className="entry-delete" onClick={() => deleteScheduleTask(task.id)} aria-label={`Hapus ${task.title}`}><Trash2 size={16} /></button></article>)}</div> : <div className="schedule-empty"><span>◌</span><div><h3>Belum ada kegiatan.</h3><p>Masukkan satu hal yang ingin kamu selesaikan hari ini.</p></div></div>}</article>
+            <article className="fitness-schedule panel-paper"><div className="panel-head"><div><p className="eyebrow">KEBUGARAN DARI KESEHATAN</p><h2>Rencana gerak hari ini</h2></div><span className="fitness-mark"><Activity size={17} /></span></div>{todayFitnessPlans.length ? <div className="schedule-items">{todayFitnessPlans.map(plan => <article key={plan.id} className={plan.done ? "schedule-item schedule-item--fitness schedule-item--done" : "schedule-item schedule-item--fitness"}><Checkbox id={`fitness-${plan.id}`} className="schedule-check" checked={plan.done} onCheckedChange={(checked) => setFitnessPlanDone(plan.id, checked === true)} /><div className="schedule-time">{plan.time || "fleksibel"}</div><label className="schedule-copy" htmlFor={`fitness-${plan.id}`}><h3>{plan.activity}</h3><p>{[plan.duration && `${plan.duration} menit`, plan.note].filter(Boolean).join(" · ") || "Rencana dari halaman Kesehatan"}</p></label><button type="button" className="entry-delete" onClick={() => deleteFitnessPlan(plan.id)} aria-label={`Hapus ${plan.activity}`}><Trash2 size={16} /></button></article>)}</div> : <div className="schedule-empty schedule-empty--fitness"><span><Activity size={15} /></span><div><h3>Belum ada rencana Kebugaran.</h3><p>Tambahkan dari halaman Kesehatan agar muncul otomatis di sini.</p></div></div>}</article></section>
+            <aside className="ritual-board panel-paper"><div className="panel-head"><div><p className="eyebrow">RITUAL HARIAN</p><h2>Yang ingin kamu rawat</h2></div><strong className="routine-count">{routinesDone}/{data.rituals.length}</strong></div>{data.rituals.length ? <div className="ritual-list">{data.rituals.map(item => { const done = data.routines[`${today}-${item.id}`]; return <article key={item.id} className={done ? "ritual-row ritual-row--done" : "ritual-row"}><Checkbox id={`ritual-${item.id}`} className="schedule-check" checked={done} onCheckedChange={() => toggleRoutine(item.id)} /><label htmlFor={`ritual-${item.id}`}><small>{item.area}</small><strong>{item.label}</strong></label><button type="button" className="entry-delete" onClick={() => deleteRitual(item.id)} aria-label={`Hapus ritual ${item.label}`}><Trash2 size={15} /></button></article>; })}</div> : <p className="ritual-board-empty">Belum ada ritual pribadi untuk dijalankan hari ini.</p>}<form className="ritual-schedule-form" onSubmit={addRitual}><label>Ritual baru<input required name="ritualLabel" maxLength={80} placeholder="Contoh: Menyiapkan botol minum" /></label><label>Area (opsional)<input name="ritualArea" maxLength={40} placeholder="Contoh: Hidrasi" /></label><button type="submit" className="outline-button"><Plus size={15} /> Tambah ritual</button></form></aside></div>
         </section>}
 
         {page === "health" && <section className="page page--active"><PageHeading eyebrow="CHECK-IN KESEHATAN" title="Rawat tubuh sebagai bagian dari pertumbuhanmu." description="Catat yang berguna bagimu. Pelacak ini membantu pengamatan pribadi, bukan pengganti nasihat tenaga kesehatan." />
           <section className="health-overview"><article className="health-summary"><p className="eyebrow">HARI INI · {displayDate(today)}</p><h3>{currentCheckin.sleep ? `${currentCheckin.sleep} jam tidur` : "Belum ada check-in"}</h3><div className="health-tags">{currentCheckin.energy && <span><Sun size={14} /> Energi {currentCheckin.energy}/5</span>}{currentCheckin.mood && <span><HeartPulse size={14} /> Mood {currentCheckin.mood}/5</span>}{currentCheckin.water && <span>◌ {currentCheckin.water} gelas air</span>}</div><p>{currentCheckin.note || "Dengarkan tubuhmu tanpa harus mengubahnya menjadi target."}</p></article><aside className="health-quote"><Moon size={22} /><blockquote>“Perawatan yang konsisten tidak harus rumit. Pilih yang bisa kamu lakukan lagi besok.”</blockquote></aside></section>
           <form className="health-form panel-paper" onSubmit={saveHealth}><div className="panel-head"><div><p className="eyebrow">CHECK-IN TUBUH</p><h2>Bagaimana keadaanmu hari ini?</h2></div><span className="date-stamp">hari ini</span></div><div className="health-fields"><label>Tidur (jam)<input type="number" name="sleep" min="0" max="24" step="0.5" defaultValue={currentCheckin.sleep} placeholder="mis. 7,5" /></label><label>Energi (1–5)<select name="energy" defaultValue={currentCheckin.energy}><option value="">Pilih</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></label><label>Suasana hati (1–5)<select name="mood" defaultValue={currentCheckin.mood}><option value="">Pilih</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></label><label>Air minum (gelas)<input type="number" name="water" min="0" max="50" defaultValue={currentCheckin.water} placeholder="mis. 6" /></label><label>Gerak (menit)<input type="number" name="movement" min="0" max="1440" defaultValue={currentCheckin.movement} placeholder="mis. 30" /></label></div><label>Catatan tubuh hari ini<textarea name="note" rows={3} defaultValue={currentCheckin.note} placeholder="Contoh: Bahu terasa tegang setelah duduk lama; berjalan sore membuatku lebih tenang." /></label><div className="form-actions"><p>Hanya catat yang membantumu melihat pola.</p><button type="submit" className="primary-button">Simpan check-in <ArrowRight size={17} /></button></div></form>
-          <section className="routine-section"><div className="section-title"><div><p className="eyebrow">RITUAL PRIBADIMU</p><h2>Yang ingin kamu rawat hari ini</h2></div><strong className="routine-count">{routinesDone}/{data.rituals.length}</strong></div>{data.rituals.length ? <div className="routine-grid">{data.rituals.map(item => { const done = data.routines[`${today}-${item.id}`]; return <article key={item.id} className={done ? "routine-card routine-card--done" : "routine-card"}><button type="button" className="routine-toggle-card" onClick={() => toggleRoutine(item.id)} aria-pressed={done}><span className="routine-icon">{done ? <Check size={18} /> : "◌"}</span><small>{item.area}</small><strong>{item.label}</strong></button><button type="button" className="routine-delete" onClick={() => deleteRitual(item.id)} aria-label={`Hapus ritual ${item.label}`}><Trash2 size={15} /></button></article>; })}</div> : <div className="ritual-empty"><span>✦</span><div><h3>Belum ada ritual pribadi.</h3><p>Tambahkan ritual kecil yang benar-benar sesuai dengan hidupmu saat ini.</p></div></div>}<form className="ritual-form" onSubmit={addRitual}><div><p className="eyebrow">TAMBAH RITUAL</p><h3>Buat daftar yang lebih personal</h3></div><label>Nama ritual<input required name="ritualLabel" maxLength={80} placeholder="Contoh: Menyiapkan botol minum untuk besok" /></label><label>Area (opsional)<input name="ritualArea" maxLength={40} placeholder="Contoh: Hidrasi" /></label><button type="submit" className="primary-button"><Plus size={16} /> Tambahkan</button></form></section>
           <section className="nutrition-section"><div className="section-title"><div><p className="eyebrow">TRACKER MAKAN & MINUM</p><h2>Kenali asupanmu, dengan netral</h2></div><span className="entry-count"><Coffee size={16} /> {todayFoodEntries.length} catatan hari ini</span></div>
             <form className="nutrition-target-form" onSubmit={saveNutritionTargets}><div className="target-form-intro"><p className="eyebrow">TARGET PRIBADI HARIAN</p><h3>Atur angka yang ingin kamu pantau</h3><p>Kosongkan atau isi 0 bila tidak memakai target. Tidak ada rekomendasi otomatis.</p></div><div className="target-inputs"><label>Kalori (kcal)<input name="targetKcal" type="number" min="0" step="1" inputMode="numeric" defaultValue={data.nutritionTargets.kcal || ""} placeholder="mis. 2000" /></label><label>Karbohidrat (g)<input name="targetCarbs" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.carbs || ""} placeholder="mis. 250" /></label><label>Protein (g)<input name="targetProtein" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.protein || ""} placeholder="mis. 90" /></label><label>Lemak (g)<input name="targetFat" type="number" min="0" step="0.1" inputMode="decimal" defaultValue={data.nutritionTargets.fat || ""} placeholder="mis. 65" /></label></div><button type="submit" className="target-save">Simpan target <ArrowRight size={15} /></button></form>
             <div className="nutrition-overview"><article className="nutrition-kcal"><div><p className="eyebrow">TOTAL HARI INI</p><strong><AnimatedNutritionNumber value={nutritionTotals.kcal} pulseKey={nutritionPulse} /> <small>kcal</small></strong><p>{data.nutritionTargets.kcal > 0 ? `Target pribadi: ${data.nutritionTargets.kcal.toLocaleString("id-ID")} kcal.` : "Diinput mandiri, tanpa target atau penilaian."}</p><NutritionProgressBar value={nutritionTotals.kcal} target={data.nutritionTargets.kcal} tone="calorie" label="kalori" pulseKey={nutritionPulse} /></div><span><UtensilsGlyph /></span></article><div className="macro-grid"><article><span>Karbohidrat</span><strong><AnimatedNutritionNumber value={nutritionTotals.carbs} pulseKey={nutritionPulse} /><small>g</small></strong><div><p>{nutritionProgress(nutritionTotals.carbs, data.nutritionTargets.carbs, "g")}</p><NutritionProgressBar value={nutritionTotals.carbs} target={data.nutritionTargets.carbs} tone="carbs" label="karbohidrat" pulseKey={nutritionPulse} /></div><i className="macro-bar macro-bar--carbs" /></article><article><span>Protein</span><strong><AnimatedNutritionNumber value={nutritionTotals.protein} pulseKey={nutritionPulse} /><small>g</small></strong><div><p>{nutritionProgress(nutritionTotals.protein, data.nutritionTargets.protein, "g")}</p><NutritionProgressBar value={nutritionTotals.protein} target={data.nutritionTargets.protein} tone="protein" label="protein" pulseKey={nutritionPulse} /></div><i className="macro-bar macro-bar--protein" /></article><article><span>Lemak</span><strong><AnimatedNutritionNumber value={nutritionTotals.fat} pulseKey={nutritionPulse} /><small>g</small></strong><div><p>{nutritionProgress(nutritionTotals.fat, data.nutritionTargets.fat, "g")}</p><NutritionProgressBar value={nutritionTotals.fat} target={data.nutritionTargets.fat} tone="fat" label="lemak" pulseKey={nutritionPulse} /></div><i className="macro-bar macro-bar--fat" /></article></div></div>
             <div className="nutrition-workspace"><form className="nutrition-form panel-paper" onSubmit={addFoodEntry}><div className="panel-head"><div><p className="eyebrow">TAMBAH CATATAN MANUAL</p><h2>Makan atau minum apa?</h2></div><span className="date-stamp">{shortDate(today)}</span></div><p className="form-intro">Masukkan angka yang kamu ketahui atau ingin catat sendiri. Semua kolom nutrisi bersifat opsional.</p><div className="nutrition-primary-fields"><label>Jenis konsumsi<select name="type" defaultValue="Makanan"><option>Makanan</option><option>Minuman</option></select></label><label>Waktu konsumsi<select name="meal" defaultValue="Sarapan"><option>Sarapan</option><option>Makan siang</option><option>Makan malam</option><option>Camilan</option><option>Minuman</option><option>Lainnya</option></select></label><label className="food-name-field">Nama makanan/minuman<input required name="name" maxLength={100} placeholder="Contoh: Nasi, ayam, dan sayur" /></label></div><div className="macro-input-grid"><label>Kalori (kcal)<input name="kcal" type="number" min="0" step="1" inputMode="numeric" placeholder="0" /></label><label>Karbohidrat (g)<input name="carbs" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label><label>Protein (g)<input name="protein" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label><label>Lemak (g)<input name="fat" type="number" min="0" step="0.1" inputMode="decimal" placeholder="0" /></label></div><div className="nutrition-actions"><p><GlassWater size={16} /> Data dicatat secara lokal di perangkat ini.</p><button type="submit" className="primary-button"><Plus size={16} /> Tambahkan</button></div></form>
               <article className="food-log panel-paper"><div className="panel-head"><div><p className="eyebrow">CATATAN HARI INI</p><h2>Makan & minum</h2></div><span className="food-log-mark">✦</span></div>{todayFoodEntries.length ? <div className="food-log-list">{todayFoodEntries.map(entry => <article key={entry.id} className="food-log-entry"><div className={entry.type === "Minuman" ? "food-type food-type--drink" : "food-type"}>{entry.type === "Minuman" ? <GlassWater size={15} /> : <UtensilsGlyph size={15} />}</div><div className="food-entry-copy"><div><span>{entry.meal}</span><h3>{entry.name}</h3></div><p><strong>{entry.kcal} kcal</strong><span>· {entry.carbs}g karbo</span><span>· {entry.protein}g protein</span><span>· {entry.fat}g lemak</span></p></div><button type="button" className="entry-delete" onClick={() => deleteFoodEntry(entry.id)} aria-label={`Hapus ${entry.name}`}><Trash2 size={16} /></button></article>)}</div> : <div className="food-log-empty"><img src={emptyStateImage} alt="" /><p>Belum ada makanan atau minuman yang dicatat hari ini.</p></div>}</article></div>
+            <section className="fitness-section"><div className="section-title"><div><p className="eyebrow">BAGAN KEBUGARAN</p><h2>Gerak yang ingin kamu lakukan</h2></div><span className="entry-count"><Activity size={16} /> {todayFitnessPlans.length} rencana</span></div><div className="fitness-workspace"><form className="fitness-form panel-paper" onSubmit={addFitnessPlan}><div className="panel-head"><div><p className="eyebrow">RENCANA HARI INI</p><h2>Masukkan rencana gerak</h2></div><span className="date-stamp">terhubung ke Jadwal</span></div><p>Rencana ini akan muncul otomatis sebagai checkpoint pada halaman Jadwal hari ini.</p><div className="fitness-inputs"><label>Jam (opsional)<input name="fitnessTime" type="time" /></label><label>Jenis olahraga/kegiatan<input required name="fitnessActivity" maxLength={100} placeholder="Contoh: Jalan santai" /></label><label>Durasi (menit, opsional)<input name="fitnessDuration" type="number" min="0" max="1440" inputMode="numeric" placeholder="mis. 30" /></label><label className="fitness-note-field">Keterangan (opsional)<input name="fitnessNote" maxLength={150} placeholder="Contoh: Keliling taman dekat rumah" /></label></div><button type="submit" className="primary-button"><Activity size={16} /> Tambahkan ke Jadwal</button></form><article className="fitness-preview panel-paper"><div className="panel-head"><div><p className="eyebrow">TERJADWAL HARI INI</p><h2>Rencana Kebugaran</h2></div><span className="fitness-mark"><Activity size={17} /></span></div>{todayFitnessPlans.length ? <div className="fitness-plan-list">{todayFitnessPlans.map(plan => <article key={plan.id} className={plan.done ? "fitness-plan-row fitness-plan-row--done" : "fitness-plan-row"}><div><span>{plan.time || "fleksibel"}</span><h3>{plan.activity}</h3><p>{[plan.duration && `${plan.duration} menit`, plan.note].filter(Boolean).join(" · ")}</p></div><button type="button" className="entry-delete" onClick={() => deleteFitnessPlan(plan.id)} aria-label={`Hapus ${plan.activity}`}><Trash2 size={16} /></button></article>)}</div> : <div className="food-log-empty"><img src={emptyStateImage} alt="" /><p>Belum ada rencana Kebugaran hari ini.</p></div>}</article></div></section>
           </section>
         </section>}
 

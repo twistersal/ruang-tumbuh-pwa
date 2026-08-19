@@ -47,3 +47,11 @@
 - [x] Tambahkan penghitung angka yang bergerak menuju total baru saat entri disimpan.
 - [x] Selaraskan durasi dan pemicu angka dengan animasi progress bar.
 - [x] Uji tampilan, preferensi pengurangan gerak, dan build produksi.
+
+## Halaman Jadwal & Kebugaran
+
+- [x] Gabungkan Refleksi dan Latihan ke satu alur halaman yang ringkas.
+- [x] Tambahkan halaman Jadwal dengan to-do checkpoint, jam, dan keterangan kegiatan.
+- [x] Pindahkan ritual ke daftar Jadwal harian.
+- [x] Tambahkan rencana Kebugaran di Kesehatan yang otomatis muncul di Jadwal.
+- [x] Uji migrasi data lokal, navigasi, responsivitas, dan build produksi.
