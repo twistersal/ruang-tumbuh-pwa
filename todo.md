@@ -112,3 +112,8 @@
 - [x] Tambahkan label Routine, Hobbies, Lectures, Works, dan Leisures pada aktivitas.
 - [x] Urutkan aktivitas berdasarkan prioritas dan tampilkan indikator warna interaktif.
 - [x] Uji input, pengurutan, penyimpanan lokal, tampilan smartphone, dan build produksi.
+
+## Perbaikan Indikator Checklist Jadwal
+
+- [x] Hilangkan indikator blok kuning saat tugas dikembalikan ke status belum selesai.
+- [x] Uji checklist dan pembatalan pada Jadwal serta build produksi.
