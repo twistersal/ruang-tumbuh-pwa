@@ -117,3 +117,9 @@
 
 - [x] Hilangkan indikator blok kuning saat tugas dikembalikan ke status belum selesai.
 - [x] Uji checklist dan pembatalan pada Jadwal serta build produksi.
+
+## Perapian Tugas Selesai
+
+- [x] Perjelas tanda checkbox pada tugas selesai.
+- [x] Redupkan warna baris tugas selesai tanpa hanya mengandalkan coretan.
+- [x] Uji tampilan status selesai pada smartphone dan build produksi.
