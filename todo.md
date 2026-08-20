@@ -99,3 +99,9 @@
 - [x] Hapus pita pink dan label hari ini dari kartu check-in.
 - [x] Tampilkan satu angka makro utama dalam format tercatat/target gram.
 - [x] Uji kartu Kesehatan pada smartphone dan build produksi.
+
+## Penyederhanaan Progres & Kebugaran
+
+- [x] Sisakan persentase capaian saja di atas progress bar makronutrisi.
+- [x] Hapus label terhubung ke Jadwal dan pita penanda hijau pada formulir kebugaran.
+- [x] Uji halaman Kesehatan pada smartphone dan build produksi.
