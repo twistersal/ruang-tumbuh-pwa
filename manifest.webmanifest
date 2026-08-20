@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Ruang Tumbuh — Refleksi & Kesehatan",
+  "short_name": "Ruang Tumbuh",
+  "description": "Jurnal refleksi dan ritual kecil yang dapat digunakan offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff9f0",
+  "theme_color": "#f45b8a",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "https://ruangtumbuh-7wc6sasx.manus.space/manus-storage/ruang-tumbuh-icon-closeup_a590a1b3.png", "sizes": "1920x1920", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Catat kejadian", "short_name": "Catat", "url": "./?view=capture", "icons": [{ "src": "https://ruangtumbuh-7wc6sasx.manus.space/manus-storage/ruang-tumbuh-icon-closeup_a590a1b3.png", "sizes": "1920x1920" }] }
+  ]
+}
