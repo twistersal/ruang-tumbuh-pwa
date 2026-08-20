@@ -69,3 +69,33 @@
 - [x] Hapus pita pink, lingkaran hari ini, lingkaran jumlah item, dan tab hijau pada kartu Kebugaran.
 - [x] Hapus bagan ritual duplikatif dari Jadwal.
 - [x] Uji Refleksi dan Jadwal pada smartphone serta build produksi.
+
+## Penerbitan GitHub Pages
+
+- [x] Audit konfigurasi aset, manifest, dan base path untuk GitHub Pages.
+- [x] Tambahkan alur deployment otomatis dari branch utama.
+- [x] Aktifkan GitHub Pages dan verifikasi URL publik.
+
+## Koreksi Repositori GitHub
+
+- [x] Verifikasi akses ke repositori `twistersal/ruang-tumbuh`.
+- [x] Pindahkan branch kode aplikasi dan branch publik ke repositori yang benar.
+- [x] Arahkan GitHub Pages repositori benar ke branch publik dan verifikasi URL.
+
+## Perbaikan Routing GitHub Pages
+
+- [x] Sesuaikan router agar memahami base path `/ruang-tumbuh/`.
+- [x] Bangun dan terbitkan ulang branch web serta branch publik.
+- [x] Verifikasi tampilan aplikasi pada URL GitHub Pages.
+
+## Perbaikan Navigasi Internal GitHub Pages
+
+- [x] Audit pembentukan URL saat pengguna berpindah halaman.
+- [x] Gunakan base path GitHub Pages pada seluruh pembaruan URL internal.
+- [x] Terbitkan ulang dan verifikasi halaman Catat, Refleksi, Jadwal, dan Kesehatan.
+
+## Perapian Kesehatan
+
+- [x] Hapus pita pink dan label hari ini dari kartu check-in.
+- [x] Tampilkan satu angka makro utama dalam format tercatat/target gram.
+- [x] Uji kartu Kesehatan pada smartphone dan build produksi.
