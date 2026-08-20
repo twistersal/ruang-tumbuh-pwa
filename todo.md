@@ -105,3 +105,10 @@
 - [x] Sisakan persentase capaian saja di atas progress bar makronutrisi.
 - [x] Hapus label terhubung ke Jadwal dan pita penanda hijau pada formulir kebugaran.
 - [x] Uji halaman Kesehatan pada smartphone dan build produksi.
+
+## Prioritas & Label Aktivitas Jadwal
+
+- [x] Tambahkan kategori prioritas Eisenhower pada input aktivitas dan penyimpanan lokal.
+- [x] Tambahkan label Routine, Hobbies, Lectures, Works, dan Leisures pada aktivitas.
+- [x] Urutkan aktivitas berdasarkan prioritas dan tampilkan indikator warna interaktif.
+- [x] Uji input, pengurutan, penyimpanan lokal, tampilan smartphone, dan build produksi.

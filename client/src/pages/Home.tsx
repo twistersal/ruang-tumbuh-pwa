@@ -35,6 +35,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 type Page = "dashboard" | "capture" | "reflections" | "schedule" | "health" | "review";
 type Outcome = "berhasil" | "sebagian" | "belum";
+type TaskPriority = "important-urgent" | "important-not-urgent" | "not-important-urgent" | "not-important-not-urgent";
+type ActivityLabel = "Routine" | "Hobbies" | "Lectures" | "Works" | "Leisures";
 
 type Reflection = {
   id: string;
@@ -68,7 +70,7 @@ type FoodEntry = {
   fat: number;
 };
 type NutritionTargets = { kcal: number; carbs: number; protein: number; fat: number };
-type ScheduleTask = { id: string; date: string; time: string; title: string; note: string; done: boolean };
+type ScheduleTask = { id: string; date: string; time: string; title: string; note: string; priority: TaskPriority; activityLabel: ActivityLabel; done: boolean };
 type FitnessPlan = { id: string; date: string; time: string; activity: string; duration: string; note: string; done: boolean };
 type AppData = {
   reflections: Reflection[];
@@ -115,6 +117,27 @@ const navItems: { id: Page; icon: typeof HomeIcon }[] = [
 ];
 
 const categories = ["Kerja", "Kuliah", "Komunikasi", "Hubungan", "Kesehatan", "Diri sendiri", "Lainnya"];
+const taskPriorityOptions: { value: TaskPriority; label: string; hint: string }[] = [
+  { value: "important-urgent", label: "Penting & mendesak", hint: "Kerjakan lebih dulu" },
+  { value: "important-not-urgent", label: "Penting, tidak mendesak", hint: "Jadwalkan dengan tenang" },
+  { value: "not-important-urgent", label: "Tidak penting, mendesak", hint: "Selesaikan seperlunya" },
+  { value: "not-important-not-urgent", label: "Tidak penting, tidak mendesak", hint: "Bisa ditunda" },
+];
+const activityLabelOptions: ActivityLabel[] = ["Routine", "Hobbies", "Lectures", "Works", "Leisures"];
+const priorityRank: Record<TaskPriority, number> = { "important-urgent": 0, "important-not-urgent": 1, "not-important-urgent": 2, "not-important-not-urgent": 3 };
+const priorityLabels: Record<TaskPriority, string> = Object.fromEntries(taskPriorityOptions.map(option => [option.value, option.label])) as Record<TaskPriority, string>;
+
+function normalizeTaskPriority(value: unknown): TaskPriority {
+  return taskPriorityOptions.some(option => option.value === value) ? value as TaskPriority : "important-not-urgent";
+}
+
+function normalizeActivityLabel(value: unknown): ActivityLabel {
+  return activityLabelOptions.includes(value as ActivityLabel) ? value as ActivityLabel : "Routine";
+}
+
+function normalizeScheduleTask(task: ScheduleTask): ScheduleTask {
+  return { ...task, priority: normalizeTaskPriority(task.priority), activityLabel: normalizeActivityLabel(task.activityLabel) };
+}
 
 function localDate(date = new Date()) {
   const offset = date.getTimezoneOffset();
@@ -150,7 +173,7 @@ function loadData(): AppData {
         kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
         protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
       } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
-      scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks : [],
+      scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks.map(normalizeScheduleTask) : [],
       fitnessPlans: Array.isArray(source.fitnessPlans) ? source.fitnessPlans : [],
     };
   } catch {
@@ -282,7 +305,12 @@ export default function Home() {
     protein: total.protein + entry.protein,
     fat: total.fat + entry.fat,
   }), { kcal: 0, carbs: 0, protein: 0, fat: 0 }), [todayFoodEntries]);
-  const todayScheduleTasks = useMemo(() => data.scheduleTasks.filter(task => task.date === today).sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")), [data.scheduleTasks, today]);
+  const todayScheduleTasks = useMemo(() => data.scheduleTasks.filter(task => task.date === today).sort((a, b) => {
+    const priorityDifference = priorityRank[a.priority] - priorityRank[b.priority];
+    if (priorityDifference) return priorityDifference;
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return (a.time || "99:99").localeCompare(b.time || "99:99");
+  }), [data.scheduleTasks, today]);
   const todayFitnessPlans = useMemo(() => data.fitnessPlans.filter(plan => plan.date === today).sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")), [data.fitnessPlans, today]);
   const scheduleDone = todayScheduleTasks.filter(task => task.done).length + todayFitnessPlans.filter(plan => plan.done).length;
   const scheduleTotal = todayScheduleTasks.length + todayFitnessPlans.length;
@@ -374,7 +402,8 @@ export default function Home() {
     const form = new FormData(event.currentTarget);
     const task: ScheduleTask = {
       id: crypto.randomUUID(), date: today, time: String(form.get("time") || ""),
-      title: String(form.get("title") || "").trim(), note: String(form.get("note") || "").trim(), done: false,
+      title: String(form.get("title") || "").trim(), note: String(form.get("note") || "").trim(),
+      priority: normalizeTaskPriority(form.get("priority")), activityLabel: normalizeActivityLabel(form.get("activityLabel")), done: false,
     };
     if (!task.title) return;
     updateData(previous => ({ ...previous, scheduleTasks: [...previous.scheduleTasks, task] }));
@@ -475,7 +504,7 @@ export default function Home() {
             kcal: Math.max(0, Number(source.nutritionTargets.kcal) || 0), carbs: Math.max(0, Number(source.nutritionTargets.carbs) || 0),
             protein: Math.max(0, Number(source.nutritionTargets.protein) || 0), fat: Math.max(0, Number(source.nutritionTargets.fat) || 0),
           } : { kcal: 0, carbs: 0, protein: 0, fat: 0 },
-          scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks : [],
+          scheduleTasks: Array.isArray(source.scheduleTasks) ? source.scheduleTasks.map(normalizeScheduleTask) : [],
           fitnessPlans: Array.isArray(source.fitnessPlans) ? source.fitnessPlans : [],
         });
         toast.success("Cadangan berhasil dipulihkan.");
@@ -560,8 +589,8 @@ export default function Home() {
 
         {page === "schedule" && <section className="page page--active schedule-page"><PageHeading eyebrow="JADWAL HARI INI" title="Beri ruang untuk hal yang perlu dikerjakan." description="Simpan kegiatan dan rencana hari ini di satu halaman sederhana." action={<span className="date-stamp">{displayDate(today)}</span>} />
           <section className="schedule-summary"><article><p className="eyebrow">CHECKPOINT HARI INI</p><strong>{scheduleDone}/{scheduleTotal}</strong><span>kegiatan selesai</span></article><div><p>Jadwal tidak harus penuh untuk terasa berarti.</p><small>Atur yang membantu, sisakan ruang untuk bernafas.</small></div></section>
-          <div className="schedule-layout"><section className="schedule-main"><form className="schedule-form panel-paper" onSubmit={addScheduleTask}><div className="panel-head"><div><p className="eyebrow">TAMBAH KEGIATAN</p><h2>Apa yang ingin kamu lakukan?</h2></div></div><div className="schedule-inputs"><label>Jam (opsional)<input name="time" type="time" /></label><label>Nama kegiatan<input required name="title" maxLength={100} placeholder="Contoh: Mengirim revisi laporan" /></label><label className="schedule-note-field">Keterangan (opsional)<input name="note" maxLength={150} placeholder="Contoh: Cek ulang lampiran sebelum dikirim" /></label></div><button type="submit" className="primary-button"><Plus size={16} /> Masukkan ke Jadwal</button></form>
-            <article className="schedule-list panel-paper"><div className="panel-head"><div><p className="eyebrow">TO-DO HARI INI</p><h2>Urutan yang bisa kamu pegang</h2></div></div>{todayScheduleTasks.length ? <div className="schedule-items">{todayScheduleTasks.map(task => <article key={task.id} className={task.done ? "schedule-item schedule-item--done" : "schedule-item"}><Checkbox id={`task-${task.id}`} className="schedule-check" checked={task.done} onCheckedChange={(checked) => setScheduleTaskDone(task.id, checked === true)} /><div className="schedule-time">{task.time || "kapan saja"}</div><label className="schedule-copy" htmlFor={`task-${task.id}`}><h3>{task.title}</h3>{task.note && <p>{task.note}</p>}</label><button type="button" className="entry-delete" onClick={() => deleteScheduleTask(task.id)} aria-label={`Hapus ${task.title}`}><Trash2 size={16} /></button></article>)}</div> : <div className="schedule-empty"><span>◌</span><div><h3>Belum ada kegiatan.</h3><p>Masukkan satu hal yang ingin kamu selesaikan hari ini.</p></div></div>}</article>
+          <div className="schedule-layout"><section className="schedule-main"><form className="schedule-form panel-paper" onSubmit={addScheduleTask}><div className="panel-head"><div><p className="eyebrow">TAMBAH KEGIATAN</p><h2>Apa yang ingin kamu lakukan?</h2></div></div><div className="schedule-inputs"><label>Jam (opsional)<input name="time" type="time" /></label><label>Nama kegiatan<input required name="title" maxLength={100} placeholder="Contoh: Mengirim revisi laporan" /></label><label className="schedule-priority-field">Prioritas<select name="priority" defaultValue="important-not-urgent">{taskPriorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select><small>Pilihan paling penting akan disematkan paling atas.</small></label><label className="schedule-label-field">Label aktivitas<select name="activityLabel" defaultValue="Routine">{activityLabelOptions.map(label => <option key={label}>{label}</option>)}</select></label><label className="schedule-note-field">Keterangan (opsional)<input name="note" maxLength={150} placeholder="Contoh: Cek ulang lampiran sebelum dikirim" /></label></div><button type="submit" className="primary-button"><Plus size={16} /> Masukkan ke Jadwal</button></form>
+            <article className="schedule-list panel-paper"><div className="panel-head"><div><p className="eyebrow">TO-DO HARI INI</p><h2>Urutan yang bisa kamu pegang</h2></div></div>{todayScheduleTasks.length ? <div className="schedule-items">{todayScheduleTasks.map(task => <article key={task.id} className={task.done ? `schedule-item schedule-item--${task.priority} schedule-item--done` : `schedule-item schedule-item--${task.priority}`}><Checkbox id={`task-${task.id}`} className="schedule-check" checked={task.done} onCheckedChange={(checked) => setScheduleTaskDone(task.id, checked === true)} /><div className="schedule-time">{task.time || "kapan saja"}</div><label className="schedule-copy" htmlFor={`task-${task.id}`}><div className="schedule-badges"><span className={`task-priority task-priority--${task.priority}`}>{priorityLabels[task.priority]}</span><span className={`task-label task-label--${task.activityLabel.toLowerCase()}`}>{task.activityLabel}</span></div><h3>{task.title}</h3>{task.note && <p>{task.note}</p>}</label><button type="button" className="entry-delete" onClick={() => deleteScheduleTask(task.id)} aria-label={`Hapus ${task.title}`}><Trash2 size={16} /></button></article>)}</div> : <div className="schedule-empty"><span>◌</span><div><h3>Belum ada kegiatan.</h3><p>Masukkan satu hal yang ingin kamu selesaikan hari ini.</p></div></div>}</article>
             <article className="fitness-schedule panel-paper"><div className="panel-head"><div><p className="eyebrow">KEBUGARAN DARI KESEHATAN</p><h2>Rencana gerak hari ini</h2></div><span className="fitness-mark"><Activity size={17} /></span></div>{todayFitnessPlans.length ? <div className="schedule-items">{todayFitnessPlans.map(plan => <article key={plan.id} className={plan.done ? "schedule-item schedule-item--fitness schedule-item--done" : "schedule-item schedule-item--fitness"}><Checkbox id={`fitness-${plan.id}`} className="schedule-check" checked={plan.done} onCheckedChange={(checked) => setFitnessPlanDone(plan.id, checked === true)} /><div className="schedule-time">{plan.time || "fleksibel"}</div><label className="schedule-copy" htmlFor={`fitness-${plan.id}`}><h3>{plan.activity}</h3><p>{[plan.duration && `${plan.duration} menit`, plan.note].filter(Boolean).join(" · ") || "Rencana dari halaman Kesehatan"}</p></label><button type="button" className="entry-delete" onClick={() => deleteFitnessPlan(plan.id)} aria-label={`Hapus ${plan.activity}`}><Trash2 size={16} /></button></article>)}</div> : <div className="schedule-empty schedule-empty--fitness"><span><Activity size={15} /></span><div><h3>Belum ada rencana Kebugaran.</h3><p>Tambahkan dari halaman Kesehatan agar muncul otomatis di sini.</p></div></div>}</article></section>
           </div>
         </section>}
